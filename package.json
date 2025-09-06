@@ -1,0 +1,42 @@
+{
+  "name": "@enfyra/create-enfyra-app",
+  "version": "0.1.0",
+  "description": "Create Enfyra frontend applications with ease",
+  "main": "index.js",
+  "bin": {
+    "create-enfyra-app": "./index.js"
+  },
+  "preferGlobal": true,
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "enfyra",
+    "frontend",
+    "nuxt",
+    "vue",
+    "cli",
+    "scaffold",
+    "generator"
+  ],
+  "author": "Enfyra Team",
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "commander": "^11.1.0",
+    "fs-extra": "^11.1.1",
+    "inquirer": "^9.2.12",
+    "ora": "^5.4.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/enfyra/create-enfyra-app.git"
+  },
+  "bugs": {
+    "url": "https://github.com/enfyra/create-enfyra-app/issues"
+  },
+  "homepage": "https://github.com/enfyra/create-enfyra-app#readme"
+}
