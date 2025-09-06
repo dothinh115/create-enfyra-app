@@ -4,9 +4,10 @@ const { Command } = require('commander');
 const chalk = require('chalk');
 const fs = require('fs-extra');
 const path = require('path');
+const inquirer = require('inquirer');
 const { checkNodeVersion } = require('./components/validators');
 const { promptForConfiguration } = require('./components/prompts');
-const { setupProject } = require('./components/project-setup');
+const { setupProject, detectPackageManagers } = require('./components/project-setup');
 
 const program = new Command();
 const packageJson = require('./package.json');
@@ -26,11 +27,27 @@ async function main() {
     // Check Node.js version
     checkNodeVersion();
     
+    // Detect available package managers
+    const availableManagers = detectPackageManagers();
+    
+    if (availableManagers.length === 0) {
+      console.log(chalk.red('❌ No compatible package managers found!'));
+      console.log(chalk.yellow('Please install npm (v8+), yarn (v1.22+), pnpm (v7+), or bun (v1+)'));
+      process.exit(1);
+    }
+    
+    // Show detected package managers with versions
+    console.log(chalk.gray('Detected package managers:'));
+    availableManagers.forEach(pm => {
+      console.log(chalk.gray(`  • ${pm.name} v${pm.version}`));
+    });
+    console.log('');
+    
     // Get project name from command line or prompt
     let projectName = program.args[0];
     
     if (!projectName) {
-      const { name } = await require('inquirer').prompt([
+      const { name } = await inquirer.prompt([
         {
           type: 'input',
           name: 'name',
@@ -55,32 +72,7 @@ async function main() {
     }
 
     // Prompt for configuration
-    console.log(chalk.blue('📋 Project Configuration\n'));
-    const config = await promptForConfiguration(projectName);
-    
-    // Confirm configuration
-    console.log(chalk.blue('\n📝 Configuration Summary:'));
-    console.log(chalk.gray('─'.repeat(40)));
-    console.log(`${chalk.white('Project Name:')} ${chalk.green(config.projectName)}`);
-    console.log(`${chalk.white('Framework:')} ${chalk.green(config.framework)}`);
-    console.log(`${chalk.white('Package Manager:')} ${chalk.green(config.packageManager)}`);
-    console.log(`${chalk.white('API URL:')} ${chalk.green(config.apiUrl)}`);
-    console.log(`${chalk.white('Port:')} ${chalk.green(config.port)}`);
-    console.log(chalk.gray('─'.repeat(40)));
-    
-    const { confirm } = await require('inquirer').prompt([
-      {
-        type: 'confirm',
-        name: 'confirm',
-        message: 'Proceed with project creation?',
-        default: true
-      }
-    ]);
-
-    if (!confirm) {
-      console.log(chalk.yellow('⚠️  Project creation cancelled.'));
-      process.exit(0);
-    }
+    const config = await promptForConfiguration(projectName, availableManagers);
 
     // Setup project
     await setupProject(config, projectPath);
@@ -95,10 +87,7 @@ async function main() {
   } catch (error) {
     console.error(chalk.red.bold('\n❌ Error creating project:'));
     console.error(chalk.red(error.message));
-    
-    if (error.stack && process.env.DEBUG) {
-      console.error(chalk.gray(error.stack));
-    }
+    console.error(chalk.gray(error.stack));
     
     process.exit(1);
   }

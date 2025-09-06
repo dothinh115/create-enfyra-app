@@ -93,13 +93,19 @@ function validatePort(port) {
 }
 
 function validateApiUrl(url) {
-  if (!url) return true; // Optional field
+  if (!url || url.trim().length === 0) {
+    return 'API URL is required';
+  }
+  
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    return 'API URL must start with http:// or https:// (e.g., http://localhost:1105)';
+  }
   
   try {
     new URL(url);
     return true;
   } catch {
-    return 'Please enter a valid URL (e.g., http://localhost:3001)';
+    return 'Please enter a valid URL (e.g., http://localhost:1105)';
   }
 }
 

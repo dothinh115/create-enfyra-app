@@ -1,61 +1,23 @@
 const inquirer = require('inquirer');
 const { validateProjectName, validatePort, validateApiUrl } = require('./validators');
 
-async function promptForConfiguration(initialProjectName) {
+function getPrompts(availableManagers) {
   const questions = [
-    {
-      type: 'input',
-      name: 'projectName',
-      message: 'Project name:',
-      default: initialProjectName,
-      validate: validateProjectName
-    },
-    {
-      type: 'list',
-      name: 'framework',
-      message: 'Choose your framework:',
-      choices: [
-        {
-          name: '🟢 Nuxt 3 (Vue.js framework with SSR)',
-          value: 'nuxt3',
-          short: 'Nuxt 3'
-        }
-      ],
-      default: 'nuxt3'
-    },
     {
       type: 'list',
       name: 'packageManager',
       message: 'Package manager:',
-      choices: [
-        {
-          name: '📦 npm (Node Package Manager)',
-          value: 'npm',
-          short: 'npm'
-        },
-        {
-          name: '🧶 Yarn (Fast, reliable dependency management)',
-          value: 'yarn',
-          short: 'Yarn'
-        },
-        {
-          name: '🚀 Bun (Ultra-fast JavaScript runtime)',
-          value: 'bun',
-          short: 'Bun'
-        },
-        {
-          name: '⚡ pnpm (Performant npm)',
-          value: 'pnpm',
-          short: 'pnpm'
-        }
-      ],
-      default: 'npm'
+      choices: availableManagers.map(pm => ({
+        name: `${getPackageManagerIcon(pm.name)} ${pm.name} (v${pm.version})`,
+        value: pm.value,
+        short: pm.name
+      })),
+      default: availableManagers.find(pm => pm.value === 'npm')?.value || availableManagers[0]?.value,
     },
     {
       type: 'input',
       name: 'apiUrl',
-      message: 'API base URL:',
-      default: 'http://localhost:3001',
+      message: 'API base URL (must include http:// or https://):',
       validate: validateApiUrl
     },
     {
@@ -68,44 +30,27 @@ async function promptForConfiguration(initialProjectName) {
     }
   ];
 
-  // Conditional questions based on framework choice
-  const basicAnswers = await inquirer.prompt(questions);
+  return questions;
+}
 
-  let additionalQuestions = [];
-
-  // Framework-specific questions - only Nuxt 3 for now
-  if (basicAnswers.framework === 'nuxt3') {
-    additionalQuestions = [
-      {
-        type: 'list',
-        name: 'renderMode',
-        message: 'Rendering mode:',
-        choices: [
-          {
-            name: '🔄 Universal (SSR + SPA)',
-            value: 'universal',
-            short: 'Universal'
-          },
-          {
-            name: '📱 SPA (Single Page Application)',
-            value: 'spa',
-            short: 'SPA'
-          }
-        ],
-        default: 'spa'
-      }
-    ];
-  }
-
-  let additionalAnswers = {};
-  if (additionalQuestions.length > 0) {
-    additionalAnswers = await inquirer.prompt(additionalQuestions);
-  }
-
-  return {
-    ...basicAnswers,
-    ...additionalAnswers
+function getPackageManagerIcon(name) {
+  const icons = {
+    npm: '📦',
+    yarn: '🧶', 
+    pnpm: '⚡',
+    bun: '🚀'
   };
+  return icons[name] || '📦';
+}
+
+async function promptForConfiguration(initialProjectName, availableManagers) {
+  const prompts = getPrompts(availableManagers);
+  const config = await inquirer.prompt(prompts);
+  
+  // Add project name to config
+  config.projectName = initialProjectName;
+  
+  return config;
 }
 
 module.exports = {

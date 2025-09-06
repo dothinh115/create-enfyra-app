@@ -2,8 +2,51 @@ const fs = require('fs-extra');
 const path = require('path');
 const chalk = require('chalk');
 const ora = require('ora');
-const { spawn } = require('child_process');
+const { spawn, execSync } = require('child_process');
 const { generateEnvFile } = require('./env-builder');
+
+// Check available package managers with version validation
+function detectPackageManagers() {
+  const managers = [];
+  
+  // Check npm (minimum version 8.0.0)
+  try {
+    const npmVersion = execSync('npm --version', { encoding: 'utf8', stdio: 'pipe' }).trim();
+    const majorVersion = parseInt(npmVersion.split('.')[0]);
+    if (majorVersion >= 8) {
+      managers.push({ name: 'npm', value: 'npm', version: npmVersion });
+    }
+  } catch {}
+  
+  // Check yarn (minimum version 1.22.0)
+  try {
+    const yarnVersion = execSync('yarn --version', { encoding: 'utf8', stdio: 'pipe' }).trim();
+    const [major, minor] = yarnVersion.split('.').map(Number);
+    if (major > 1 || (major === 1 && minor >= 22)) {
+      managers.push({ name: 'yarn', value: 'yarn', version: yarnVersion });
+    }
+  } catch {}
+  
+  // Check pnpm (minimum version 7.0.0)
+  try {
+    const pnpmVersion = execSync('pnpm --version', { encoding: 'utf8', stdio: 'pipe' }).trim();
+    const majorVersion = parseInt(pnpmVersion.split('.')[0]);
+    if (majorVersion >= 7) {
+      managers.push({ name: 'pnpm', value: 'pnpm', version: pnpmVersion });
+    }
+  } catch {}
+  
+  // Check bun (minimum version 1.0.0)
+  try {
+    const bunVersion = execSync('bun --version', { encoding: 'utf8', stdio: 'pipe' }).trim();
+    const majorVersion = parseInt(bunVersion.split('.')[0]);
+    if (majorVersion >= 1) {
+      managers.push({ name: 'bun', value: 'bun', version: bunVersion });
+    }
+  } catch {}
+  
+  return managers;
+}
 
 async function setupProject(config, projectPath) {
   const spinner = ora();
@@ -14,9 +57,9 @@ async function setupProject(config, projectPath) {
     await fs.ensureDir(projectPath);
     spinner.succeed(chalk.green('Project directory created'));
 
-    // Clone template repository based on framework
-    const templateRepo = getTemplateRepository(config.framework);
-    spinner.start(chalk.blue(`Cloning ${config.framework} template...`));
+    // Clone Nuxt template
+    const templateRepo = 'https://github.com/dothinh115/enfyra_app.git';
+    spinner.start(chalk.blue(`Cloning Nuxt template...`));
     await cloneTemplate(templateRepo, projectPath);
     spinner.succeed(chalk.green('Template cloned successfully'));
 
@@ -30,8 +73,13 @@ async function setupProject(config, projectPath) {
     await updatePackageJson(projectPath, config);
     spinner.succeed(chalk.green('Package.json updated'));
 
+    // Update Nuxt config with API URL
+    spinner.start(chalk.blue('Configuring Nuxt with API URL...'));
+    await updateNuxtConfig(projectPath, config);
+    spinner.succeed(chalk.green('Nuxt configuration updated'));
+
     // Generate environment file
-    spinner.start(chalk.blue('Generating environment configuration...'));
+    spinner.start(chalk.blue('Generating environment file...'));
     await generateEnvFile(projectPath, config);
     spinner.succeed(chalk.green('Environment file created'));
 
@@ -57,13 +105,6 @@ async function setupProject(config, projectPath) {
   }
 }
 
-function getTemplateRepository(framework) {
-  const repositories = {
-    'nuxt3': 'https://github.com/dothinh115/enfyra_app.git'
-  };
-  
-  return repositories[framework] || repositories['nuxt3'];
-}
 
 async function cloneTemplate(repoUrl, projectPath) {
   return new Promise((resolve, reject) => {
@@ -123,43 +164,31 @@ async function updatePackageJson(projectPath, config) {
   delete packageJson.bugs;
   delete packageJson.homepage;
   
-  // Framework-specific updates
-  if (config.framework === 'nuxt3') {
-    // Add/remove Nuxt modules based on user selection
-    if (config.modules && Array.isArray(config.modules)) {
-      // This would need to be implemented based on the actual nuxt.config structure
-    }
-    
-    // Update port in nuxt config if needed
-    if (config.port !== 3000) {
-      await updateNuxtPort(projectPath, config.port);
-    }
-  }
-  
   await fs.writeJson(packageJsonPath, packageJson, { spaces: 2 });
 }
 
-async function updateNuxtPort(projectPath, port) {
+async function updateNuxtConfig(projectPath, config) {
   const nuxtConfigPath = path.join(projectPath, 'nuxt.config.ts');
   
   if (fs.existsSync(nuxtConfigPath)) {
-    let config = await fs.readFile(nuxtConfigPath, 'utf8');
+    let nuxtConfig = await fs.readFile(nuxtConfigPath, 'utf8');
     
-    // Simple regex replacement - in a real implementation, you'd want to use an AST
-    if (config.includes('devServer:')) {
-      config = config.replace(
-        /devServer:\s*{[^}]*port:\s*\d+[^}]*}/,
-        `devServer: {\n    port: ${port}\n  }`
+    // Update enfyraSDK apiUrl
+    if (nuxtConfig.includes('enfyraSDK:')) {
+      nuxtConfig = nuxtConfig.replace(
+        /enfyraSDK:\s*\{[^}]*\}/,
+        `enfyraSDK: {\n    apiUrl: "${config.apiUrl}"\n  }`
       );
     } else {
-      // Add devServer config
-      config = config.replace(
-        /export default defineNuxtConfig\(\{/,
-        `export default defineNuxtConfig({\n  devServer: {\n    port: ${port}\n  },`
+      // Add enfyraSDK config
+      nuxtConfig = nuxtConfig.replace(
+        /}\);?\s*$/,
+        `  enfyraSDK: {\n    apiUrl: "${config.apiUrl}"\n  },\n});\n`
       );
     }
     
-    await fs.writeFile(nuxtConfigPath, config);
+    
+    await fs.writeFile(nuxtConfigPath, nuxtConfig);
   }
 }
 
@@ -244,5 +273,6 @@ async function initializeGit(projectPath) {
 }
 
 module.exports = {
-  setupProject
+  setupProject,
+  detectPackageManagers
 };
