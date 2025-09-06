@@ -30,10 +30,20 @@ async function main() {
     let projectName = program.args[0];
     
     if (!projectName) {
-      console.log(chalk.yellow('Please provide a project name:'));
-      console.log(chalk.gray('  $ create-enfyra-app my-app'));
-      console.log();
-      process.exit(1);
+      const { name } = await require('inquirer').prompt([
+        {
+          type: 'input',
+          name: 'name',
+          message: 'Project name:',
+          validate: (input) => {
+            if (!input || input.trim().length === 0) {
+              return 'Project name is required';
+            }
+            return true;
+          }
+        }
+      ]);
+      projectName = name;
     }
 
     // Validate project name and directory
