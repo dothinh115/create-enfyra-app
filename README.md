@@ -51,6 +51,13 @@ The CLI will guide you through:
 - API endpoint configuration  
 - Development port setup
 
+### Environment Variables
+After project creation, you can modify the `.env` file at any time to configure:
+- API endpoints
+- Port
+
+The `.env` file is automatically created and can be customized for your specific needs.
+
 ### Start developing
 ```bash
 cd my-project
