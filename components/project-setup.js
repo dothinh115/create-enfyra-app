@@ -3,6 +3,7 @@ const path = require('path');
 const chalk = require('chalk');
 const ora = require('ora');
 const { spawn, execSync } = require('child_process');
+const { downloadTemplate } = require('giget');
 const { generateEnvFile } = require('./env-builder');
 
 // Check available package managers with version validation
@@ -52,21 +53,14 @@ async function setupProject(config, projectPath) {
   const spinner = ora();
   
   try {
-    // Create project directory
-    spinner.start(chalk.blue('Creating project directory...'));
-    await fs.ensureDir(projectPath);
-    spinner.succeed(chalk.green('Project directory created'));
-
-    // Clone Nuxt template
-    const templateRepo = 'https://github.com/dothinh115/enfyra_app.git';
-    spinner.start(chalk.blue(`Cloning Nuxt template...`));
-    await cloneTemplate(templateRepo, projectPath);
-    spinner.succeed(chalk.green('Template cloned successfully'));
-
-    // Clean up git history
-    spinner.start(chalk.blue('Cleaning up git history...'));
-    await cleanupGitHistory(projectPath);
-    spinner.succeed(chalk.green('Git history cleaned'));
+    // Download Nuxt template using giget (will create directory)
+    spinner.start(chalk.blue(`Downloading Nuxt template...`));
+    await downloadTemplate('github:dothinh115/enfyra_app', {
+      dir: projectPath,
+      force: true,
+      provider: 'github'
+    });
+    spinner.succeed(chalk.green('Template downloaded successfully'));
 
     // Update package.json
     spinner.start(chalk.blue('Updating package.json...'));
@@ -106,43 +100,6 @@ async function setupProject(config, projectPath) {
 }
 
 
-async function cloneTemplate(repoUrl, projectPath) {
-  return new Promise((resolve, reject) => {
-    const gitClone = spawn('git', [
-      'clone',
-      '--depth', '1',
-      repoUrl,
-      projectPath
-    ], {
-      stdio: 'pipe'
-    });
-
-    let stderr = '';
-
-    gitClone.stderr.on('data', (data) => {
-      stderr += data.toString();
-    });
-
-    gitClone.on('close', (code) => {
-      if (code === 0) {
-        resolve();
-      } else {
-        reject(new Error(`Git clone failed: ${stderr}`));
-      }
-    });
-
-    gitClone.on('error', (error) => {
-      reject(new Error(`Git clone error: ${error.message}`));
-    });
-  });
-}
-
-async function cleanupGitHistory(projectPath) {
-  const gitDir = path.join(projectPath, '.git');
-  if (fs.existsSync(gitDir)) {
-    await fs.remove(gitDir);
-  }
-}
 
 async function updatePackageJson(projectPath, config) {
   const packageJsonPath = path.join(projectPath, 'package.json');
@@ -229,7 +186,15 @@ async function installDependencies(projectPath, config) {
 }
 
 async function initializeGit(projectPath) {
-  return new Promise((resolve, reject) => {
+  // Check if git is available
+  try {
+    execSync('git --version', { stdio: 'pipe' });
+  } catch {
+    // Git is not available, skip initialization
+    return;
+  }
+
+  return new Promise((resolve) => {
     const gitInit = spawn('git', ['init'], {
       cwd: projectPath,
       stdio: 'pipe'
@@ -250,24 +215,20 @@ async function initializeGit(projectPath) {
               stdio: 'pipe'
             });
             
-            gitCommit.on('close', (commitCode) => {
-              if (commitCode === 0) {
-                resolve();
-              } else {
-                resolve(); // Don't fail the whole process for git commit issues
-              }
+            gitCommit.on('close', () => {
+              resolve();
             });
           } else {
-            resolve(); // Don't fail for git add issues
+            resolve();
           }
         });
       } else {
-        resolve(); // Don't fail for git init issues
+        resolve();
       }
     });
     
     gitInit.on('error', () => {
-      resolve(); // Don't fail if git is not available
+      resolve();
     });
   });
 }
