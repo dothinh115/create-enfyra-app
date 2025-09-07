@@ -4,6 +4,17 @@
 
 Create Enfyra App is a CLI tool that instantly scaffolds new Enfyra frontend projects with all the essentials configured for you.
 
+## ⚠️ Prerequisites
+
+**Important:** You need to have an Enfyra backend running before creating your frontend application. The frontend will connect to your backend API.
+
+📋 **Set up your backend first:**
+```bash
+npx @enfyra/create-enfyra-be my-backend
+```
+
+👉 **[Backend Setup Guide](https://www.npmjs.com/package/@enfyra/create-enfyra-be)** - Complete instructions for setting up your Enfyra backend
+
 ## Quick Start
 
 ```bash
