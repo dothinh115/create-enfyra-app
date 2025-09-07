@@ -23,7 +23,7 @@ function getPrompts(availableManagers) {
     {
       type: 'input',
       name: 'port',
-      message: 'Development server port:',
+      message: 'App port:',
       default: '3000',
       validate: validatePort,
       filter: (value) => parseInt(value, 10)
