@@ -77,22 +77,22 @@ npm run preview  # Preview production build
 
 ### Learn More
 
-📖 **[Complete Documentation](https://github.com/dothinh115/enfyra_app#readme)** - Full guide to building with Enfyra  
-🔧 **[API Reference](https://github.com/dothinh115/enfyra_app/blob/main/docs/API.md)** - Backend integration  
-🎨 **[UI Components](https://github.com/dothinh115/enfyra_app/blob/main/docs/COMPONENTS.md)** - Pre-built components  
-⚡ **[Best Practices](https://github.com/dothinh115/enfyra_app/blob/main/docs/BEST_PRACTICES.md)** - Development guidelines  
+📖 **[Complete Documentation](https://github.com/dothinh115/enfyra-app#readme)** - Full guide to building with Enfyra  
+🔧 **[API Reference](https://github.com/dothinh115/enfyra-app/blob/main/docs/API.md)** - Backend integration  
+🎨 **[UI Components](https://github.com/dothinh115/enfyra-app/blob/main/docs/COMPONENTS.md)** - Pre-built components  
+⚡ **[Best Practices](https://github.com/dothinh115/enfyra-app/blob/main/docs/BEST_PRACTICES.md)** - Development guidelines  
 
 ## Support
 
 Having issues? We're here to help:
 
 - 🐛 [Report bugs](https://github.com/dothinh115/create-enfyra-app/issues)
-- 💬 [Ask questions](https://github.com/dothinh115/enfyra_app/discussions)
+- 💬 [Ask questions](https://github.com/dothinh115/enfyra-app/discussions)
 - 📧 [Email support](mailto:dothinh115@gmail.com)
 
 ## Related
 
-- **[Enfyra App](https://github.com/dothinh115/enfyra_app)** - The frontend template
+- **[Enfyra App](https://github.com/dothinh115/enfyra-app)** - The frontend template
 - **[Enfyra BE](https://github.com/dothinh115/enfyra_be)** - Backend framework
 - **[Create Enfyra BE](https://github.com/dothinh115/create-enfyra-be)** - Backend CLI
 

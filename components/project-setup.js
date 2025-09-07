@@ -55,7 +55,7 @@ async function setupProject(config, projectPath) {
   try {
     // Download Nuxt template using giget (will create directory)
     spinner.start(chalk.blue(`Downloading Nuxt template...`));
-    await downloadTemplate('github:dothinh115/enfyra_app', {
+    await downloadTemplate('github:dothinh115/enfyra-app', {
       dir: projectPath,
       force: true,
       provider: 'github'
