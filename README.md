@@ -35,6 +35,10 @@ npm install -g @enfyra/create-enfyra-app
 create-enfyra-app my-app
 ```
 
+## Demo
+
+🌐 **Live Demo**: [https://demo.enfyra.io](https://demo.enfyra.io)
+
 ## What You Get
 
 ✅ **Nuxt 3** application ready to go  
