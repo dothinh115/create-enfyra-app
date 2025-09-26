@@ -12,7 +12,11 @@ function detectPackageManagers() {
   
   // Check npm (minimum version 8.0.0)
   try {
-    const npmVersion = execSync('npm --version', { encoding: 'utf8', stdio: 'pipe' }).trim();
+    const npmVersion = execSync('npm --version', {
+      encoding: 'utf8',
+      stdio: 'pipe',
+      shell: true
+    }).trim();
     const majorVersion = parseInt(npmVersion.split('.')[0]);
     if (majorVersion >= 8) {
       managers.push({ name: 'npm', value: 'npm', version: npmVersion });
@@ -21,7 +25,11 @@ function detectPackageManagers() {
   
   // Check yarn (minimum version 1.22.0)
   try {
-    const yarnVersion = execSync('yarn --version', { encoding: 'utf8', stdio: 'pipe' }).trim();
+    const yarnVersion = execSync('yarn --version', {
+      encoding: 'utf8',
+      stdio: 'pipe',
+      shell: true
+    }).trim();
     const [major, minor] = yarnVersion.split('.').map(Number);
     if (major > 1 || (major === 1 && minor >= 22)) {
       managers.push({ name: 'yarn', value: 'yarn', version: yarnVersion });
@@ -30,7 +38,11 @@ function detectPackageManagers() {
   
   // Check pnpm (minimum version 7.0.0)
   try {
-    const pnpmVersion = execSync('pnpm --version', { encoding: 'utf8', stdio: 'pipe' }).trim();
+    const pnpmVersion = execSync('pnpm --version', {
+      encoding: 'utf8',
+      stdio: 'pipe',
+      shell: true
+    }).trim();
     const majorVersion = parseInt(pnpmVersion.split('.')[0]);
     if (majorVersion >= 7) {
       managers.push({ name: 'pnpm', value: 'pnpm', version: pnpmVersion });
@@ -39,7 +51,11 @@ function detectPackageManagers() {
   
   // Check bun (minimum version 1.0.0)
   try {
-    const bunVersion = execSync('bun --version', { encoding: 'utf8', stdio: 'pipe' }).trim();
+    const bunVersion = execSync('bun --version', {
+      encoding: 'utf8',
+      stdio: 'pipe',
+      shell: true
+    }).trim();
     const majorVersion = parseInt(bunVersion.split('.')[0]);
     if (majorVersion >= 1) {
       managers.push({ name: 'bun', value: 'bun', version: bunVersion });
@@ -55,7 +71,7 @@ async function setupProject(config, projectPath) {
   try {
     // Download Nuxt template using giget (will create directory)
     spinner.start(chalk.blue(`Downloading Nuxt template...`));
-    await downloadTemplate('github:dothinh115/enfyra-app', {
+    await downloadTemplate('github:enfyra/app', {
       dir: projectPath,
       force: true,
       provider: 'github'
@@ -152,35 +168,43 @@ async function updateNuxtConfig(projectPath, config) {
 async function installDependencies(projectPath, config) {
   return new Promise((resolve, reject) => {
     const commands = {
-      npm: ['install'],
+      npm: ['install', '--legacy-peer-deps'],
       yarn: ['install'],
       pnpm: ['install'],
       bun: ['install']
     };
-    
+
     const args = commands[config.packageManager] || commands.npm;
-    
+
     const install = spawn(config.packageManager, args, {
       cwd: projectPath,
-      stdio: 'pipe'
+      stdio: 'pipe',
+      shell: true  // Add shell: true to fix spawn ENOENT on Windows
     });
-    
+
+    let stdout = '';
     let stderr = '';
-    
+
+    install.stdout.on('data', (data) => {
+      stdout += data.toString();
+    });
+
     install.stderr.on('data', (data) => {
       stderr += data.toString();
     });
-    
+
     install.on('close', (code) => {
       if (code === 0) {
         resolve();
       } else {
-        reject(new Error(`Package installation failed: ${stderr}`));
+        // Log more detailed error information
+        const errorMsg = stderr || stdout || 'Unknown error';
+        reject(new Error(`Package installation failed with code ${code}: ${errorMsg}`));
       }
     });
-    
+
     install.on('error', (error) => {
-      reject(new Error(`Package manager error: ${error.message}`));
+      reject(new Error(`Package manager spawn error: ${error.message}. Make sure ${config.packageManager} is installed and in PATH`));
     });
   });
 }
@@ -188,7 +212,7 @@ async function installDependencies(projectPath, config) {
 async function initializeGit(projectPath) {
   // Check if git is available
   try {
-    execSync('git --version', { stdio: 'pipe' });
+    execSync('git --version', { stdio: 'pipe', shell: true });
   } catch {
     // Git is not available, skip initialization
     return;
@@ -197,7 +221,8 @@ async function initializeGit(projectPath) {
   return new Promise((resolve) => {
     const gitInit = spawn('git', ['init'], {
       cwd: projectPath,
-      stdio: 'pipe'
+      stdio: 'pipe',
+      shell: true
     });
     
     gitInit.on('close', (code) => {
@@ -205,14 +230,16 @@ async function initializeGit(projectPath) {
         // Add initial commit
         const gitAdd = spawn('git', ['add', '.'], {
           cwd: projectPath,
-          stdio: 'pipe'
+          stdio: 'pipe',
+          shell: true
         });
         
         gitAdd.on('close', (addCode) => {
           if (addCode === 0) {
             const gitCommit = spawn('git', ['commit', '-m', 'Initial commit from create-enfyra-app'], {
               cwd: projectPath,
-              stdio: 'pipe'
+              stdio: 'pipe',
+              shell: true
             });
             
             gitCommit.on('close', () => {

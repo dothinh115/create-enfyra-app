@@ -1,6 +1,6 @@
 {
   "name": "@enfyra/create-enfyra-app",
-  "version": "0.1.22",
+  "version": "0.1.24",
   "description": "Create Enfyra frontend applications with ease",
   "main": "index.js",
   "bin": {
