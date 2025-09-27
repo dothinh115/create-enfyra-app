@@ -1,6 +1,6 @@
 {
   "name": "@enfyra/create-enfyra-app",
-  "version": "0.1.24",
+  "version": "0.1.30",
   "description": "Create Enfyra frontend applications with ease",
   "main": "index.js",
   "bin": {
@@ -39,5 +39,8 @@
   "bugs": {
     "url": "https://github.com/dothinh115/create-enfyra-app/issues"
   },
-  "homepage": "https://github.com/dothinh115/create-enfyra-app#readme"
+  "homepage": "https://github.com/dothinh115/create-enfyra-app#readme",
+  "publishConfig": {
+    "access": "public"
+  }
 }

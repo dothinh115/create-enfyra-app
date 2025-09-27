@@ -49,18 +49,7 @@ function detectPackageManagers() {
     }
   } catch {}
   
-  // Check bun (minimum version 1.0.0)
-  try {
-    const bunVersion = execSync('bun --version', {
-      encoding: 'utf8',
-      stdio: 'pipe',
-      shell: true
-    }).trim();
-    const majorVersion = parseInt(bunVersion.split('.')[0]);
-    if (majorVersion >= 1) {
-      managers.push({ name: 'bun', value: 'bun', version: bunVersion });
-    }
-  } catch {}
+  // Note: bun is not supported due to native binding compatibility issues
   
   return managers;
 }
@@ -83,6 +72,7 @@ async function setupProject(config, projectPath) {
     await updatePackageJson(projectPath, config);
     spinner.succeed(chalk.green('Package.json updated'));
 
+
     // Update Nuxt config with API URL
     spinner.start(chalk.blue('Configuring Nuxt with API URL...'));
     await updateNuxtConfig(projectPath, config);
@@ -92,6 +82,11 @@ async function setupProject(config, projectPath) {
     spinner.start(chalk.blue('Generating environment file...'));
     await generateEnvFile(projectPath, config);
     spinner.succeed(chalk.green('Environment file created'));
+
+    // Clean package manager restriction files
+    spinner.start(chalk.blue('Cleaning package manager restrictions...'));
+    await cleanPackageManagerRestrictions(projectPath);
+    spinner.succeed(chalk.green('Package manager restrictions cleaned'));
 
     // Install dependencies
     spinner.start(chalk.blue(`Installing dependencies with ${config.packageManager}...`));
@@ -140,6 +135,42 @@ async function updatePackageJson(projectPath, config) {
   await fs.writeJson(packageJsonPath, packageJson, { spaces: 2 });
 }
 
+async function cleanPackageManagerRestrictions(projectPath) {
+  // List of files that can restrict package manager usage
+  const restrictionFiles = [
+    '.npmrc',
+    '.yarnrc',
+    '.yarnrc.yml',
+    'pnpm-workspace.yaml',
+    'package-lock.json',
+    'yarn.lock',
+    'pnpm-lock.yaml',
+    'bun.lockb'
+  ];
+
+  for (const file of restrictionFiles) {
+    const filePath = path.join(projectPath, file);
+    if (fs.existsSync(filePath)) {
+      await fs.remove(filePath);
+      console.log(chalk.yellow(`Removed ${file}`));
+    }
+  }
+
+  // Also check package.json for packageManager field and engines restrictions
+  const packageJsonPath = path.join(projectPath, 'package.json');
+  if (fs.existsSync(packageJsonPath)) {
+    const packageJson = await fs.readJson(packageJsonPath);
+
+    // Remove packageManager field that locks to specific manager
+    if (packageJson.packageManager) {
+      delete packageJson.packageManager;
+      await fs.writeJson(packageJsonPath, packageJson, { spaces: 2 });
+      console.log(chalk.yellow('Removed packageManager restriction from package.json'));
+    }
+  }
+}
+
+
 async function updateNuxtConfig(projectPath, config) {
   const nuxtConfigPath = path.join(projectPath, 'nuxt.config.ts');
   
@@ -166,20 +197,19 @@ async function updateNuxtConfig(projectPath, config) {
 }
 
 async function installDependencies(projectPath, config) {
+  const commands = {
+    npm: ['install', '--legacy-peer-deps'],
+    yarn: ['install'],
+    pnpm: ['install']
+  };
+
+  const args = commands[config.packageManager] || commands.npm;
+
   return new Promise((resolve, reject) => {
-    const commands = {
-      npm: ['install', '--legacy-peer-deps'],
-      yarn: ['install'],
-      pnpm: ['install'],
-      bun: ['install']
-    };
-
-    const args = commands[config.packageManager] || commands.npm;
-
     const install = spawn(config.packageManager, args, {
       cwd: projectPath,
       stdio: 'pipe',
-      shell: true  // Add shell: true to fix spawn ENOENT on Windows
+      shell: true
     });
 
     let stdout = '';
@@ -197,7 +227,6 @@ async function installDependencies(projectPath, config) {
       if (code === 0) {
         resolve();
       } else {
-        // Log more detailed error information
         const errorMsg = stderr || stdout || 'Unknown error';
         reject(new Error(`Package installation failed with code ${code}: ${errorMsg}`));
       }
@@ -208,6 +237,8 @@ async function installDependencies(projectPath, config) {
     });
   });
 }
+
+
 
 async function initializeGit(projectPath) {
   // Check if git is available
